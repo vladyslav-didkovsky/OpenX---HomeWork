@@ -1,0 +1,195 @@
+""" Create a program / script that downloads post data from https://jsonplaceholder.typicode.com/posts and combines them with data 
+https://jsonplaceholder.typicode.com/users """ 
+
+import request 
+response = request.get(http://jsonplaceholder.typicode.com/users′)
+
+var posts, users;
+fetch('https://jsonplaceholder.typicode.com/posts')
+.then(function (response) { 
+   return response.json(); 
+})
+.then(function (data) { 
+return fetch('https://jsonplaceholder.typicode.com/users'); 
+})
+.then(function (response) { 
+return response.json(); }).then(function (data) 
+{ 
+console.log(data); users = data; })
+.catch(function (error) { console.log(error); });
+
+""" How much posts """ 
+
+function getResults() {
+const checkResult = res => res.ok ? res.json() : Promise.resolve({});
+const joinMap = ({title, body:lbody}, {name,body:rbody}) => ({title,lbody, rbody,name});
+
+const equiJoin = (xs, ys, primary, foreign, sel) => {
+const ix = xs.reduce(
+(ix, row) => ix.set(row[primary], row), new Map()
+    );
+ return ys.map(row => sel(ix.get(row[foreign]), row));
+}
+const posts = fetch("https://jsonplaceholder.typicode.com/posts")
+.then(checkResult);
+  
+const comments = fetch("https://jsonplaceholder.typicode.com/users")
+.then(checkResult);
+
+return Promise.all([posts, comments])
+.then(([postData, commentData]) => {
+const result = equiJoin(postData, commentData,"id", "postId", joinMap);
+console.log(result);
+  })
+  .catch(err => console.error(err));
+}
+
+#I found another type of the fater solution - maybe try this one ? 
+   
+using (HttpClient httpClient = new HttpClient()) {
+var users = JsonConvert.DeserializeObject<List<User>>(
+await httpClient.GetStringAsync("https://jsonplaceholder.typicode.com/posts")
+                );
+var users = JsonConvert.DeserializeObject<List<UserToDoList>>(
+await httpClient.GetStringAsync("http://jsonplaceholder.typicode.com/users")
+        );
+var result = from user in users
+join post in posts on user.UserId equals post.UserId into userPosts
+select new { UserId = user.UserId, Name = user.Name, CountOfPosts = userPosts.Count() };
+
+//// By SQL method 
+
+class Users(Base):
+    __tablename__ = "users"
+    UserId = Column(Integer, primary_key=True)
+    Title = Column(String)
+    FirstName = Column(String)
+    LastName = Column(String)
+    Email = Column(String)
+    Username = Column(String)
+    DOB = Column(DateTime)
+
+class Uploads(Base):
+    __tablename__ = "uploads"
+    UploadId = Column(Integer, primary_key=True)
+    UserId = Column(Integer)
+    Title = Column(String)
+    Body = Column(String)
+    Timestamp = Column(DateTime)
+
+Users.__table__.create(bind=engine, checkfirst=True)
+Uploads.__table__.create(bind=engine, checkfirst=True)
+
+import requests
+
+url = 'https://jsonplaceholder.typicode.com/users/'
+users_json = requests.get(url).json()
+url2 = 'https://jsonplaceholder.typicode.com/posts/'
+uploads_json = requests.get(url2).json()
+
+from datetime import datetime, timedelta
+from random import randint
+
+users, posts = [], []
+
+for i, result in enumerate(users_json['results']):
+    row = {}
+    row['UserId'] = i
+    row['Title'] = result['name']['title']
+    row['FirstName'] = result['name']['first']
+    row['LastName'] = result['name']['last']
+    row['Email'] = result['email']
+    row['Username'] = result['login']['username']
+    dob = datetime.strptime(result['dob'],'%Y-%m-%d %H:%M:%S')    
+    row['DOB'] = dob.date()
+    
+    users.append(row)
+    
+for result in posts_json:
+    row = {}
+    row['UploadId'] = result['id']
+    row['UserId'] = result['userId']
+    row['Title'] = result['title']
+    row['Body'] = result['body']
+    delta = timedelta(seconds=randint(1,86400))
+    row['Timestamp'] = datetime.now() - delta
+    
+    uploads.append(row)
+    
+Session = sessionmaker(bind=engine)
+session = Session()
+
+for user in users:
+    row = Users(**user)
+    session.add(row)
+    
+for post in posts:
+    row = Uploads(**post)
+    session.add(row)
+
+session.commit()
+
+class UploadCounts(Base):
+    __tablename__ = "post_counts"
+    UserId = Column(Integer, primary_key=True)
+    LastActive = Column(DateTime)
+    PostCount = Column(Integer)
+
+UploadCounts.__table__.create(bind=engine, checkfirst=True)
+
+/// 
+
+INSERT INTO upload_counts
+SELECT
+  UserId,
+  MAX(Timestamp) AS LastActive,
+  COUNT(UploadId) AS PostCount
+FROM
+  uploads
+GROUP BY 1;
+
+///
+
+METHOD 1
+
+SELECT *
+FROM table
+ORDER BY ((lat-$user_lat)*(lat-$user_lat)) + ((lng - $user_lng)*(lng - $user_lng)) ASC
+
+---
+METHOD 2
+
+SELECT
+    id, (
+      6371 * acos (
+      cos ( radians($user_lat) )
+      * cos( radians( lat ) )
+      * cos( radians( lng ) - radians($user_lng) )
+      + sin ( radians($user_lat) )
+      * sin( radians( lat ) )
+    )
+) AS distance
+FROM table
+HAVING distance < 30
+ORDER BY distance
+LIMIT 0 , 20;
+
+METHOD 3 CHOOSE ONE LOCATION AND SORT BY NEAREST PARAMETRS ID -14.3990","lng": "-120.7677"
+
+set @orig_lat=-14.3990; 
+set @orig_long=-120.7677; 
+set @bounding_distance=1;
+
+SELECT
+*
+,((ACOS(SIN(@orig_lat * PI() / 180) * SIN(`lat` * PI() / 180) + COS(@orig_lat * PI() / 180) * COS(`lat` * PI() / 180) * COS((@orig_long - `long`) * PI() / 180)) * 180 / PI()) * 60 * 1.1515) AS `distance` 
+FROM `USER_TABLE` 
+WHERE
+(
+  `lat` BETWEEN (@orig_lat - @bounding_distance) AND (@orig_lat + @bounding_distance)
+  AND `long` BETWEEN (@orig_long - @bounding_distance) AND (@orig_long + @bounding_distance)
+)
+ORDER BY `distance` ASC
+limit 10;
+
+
